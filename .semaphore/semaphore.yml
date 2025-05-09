@@ -4,6 +4,18 @@ agent:
   machine:
     type: e2-standard-2
     os_image: ubuntu2004
+
+global_job_config:
+  prologue:
+    commands:
+      - artifact pull project bin/test-results.v0.8.0-rc.0 -d /usr/local/bin/test-results --force
+      - sudo chmod +x /usr/local/bin/test-results
+  epilogue:
+    always:
+      commands:
+        - test-results command-metrics report.md
+        - test-results resource-metrics report.md
+        - artifact push job -d .semaphore/REPORT.md report.md
 blocks:
   - name: Unit tests
     dependencies: []
@@ -19,6 +31,11 @@ blocks:
           commands:
             - "export SUITE_NAME=\"\U0001F9EA Go tests\""
             - gotestsum --junitfile results.xml
+        - name: "\U0001F9EA Go coverage"
+          commands:
+            - "export SUITE_NAME=\"\U0001F9EA Go coverage\""
+            - make test.cover
+            - artifact push workflow -d .semaphore/REPORT.md COVERAGE.md
       epilogue:
         always:
           commands:
@@ -38,18 +55,15 @@ blocks:
           commands:
             - "export SUITE_NAME=\"\U0001F6E1️ Check dependencies\""
             - make check.deps
+            - '[[ -f results.xml ]] && test-results publish --name "$SUITE_NAME" results.xml'
         - name: "\U0001F6E1️ Check code"
           commands:
             - "export SUITE_NAME=\"\U0001F6E1️ Check code\""
             - make check.static
-      epilogue:
-        always:
-          commands:
-            - '[[ -f results.xml ]] && test-results publish --name "$SUITE_NAME" results.xml'
   - name: Build
     dependencies:
-      - Security checks
       - Unit tests
+      - Security checks
     task:
       prologue:
         commands:
