@@ -17,8 +17,8 @@ blocks:
       jobs:
         - name: "\U0001F9EA Go tests"
           commands:
-            - "export SUITE_NAME=\"\U0001F9EA Go tests\""
-            - gotestsum --junitfile results.xml
+            - 'checkout '
+            - artifacts push job -d .semaphore/REPORT.md REPORT.md
       epilogue:
         always:
           commands:
@@ -26,8 +26,6 @@ blocks:
   - name: Security checks
     dependencies: []
     task:
-      secrets:
-        - name: security-toolbox-shared-read-access
       prologue:
         commands:
           - checkout
